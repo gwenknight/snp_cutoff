@@ -3,7 +3,6 @@
 .RData
 .Ruserdata
 .Rproj
-
-
 data/
 plots/
+snp_cutoff.Rproj
