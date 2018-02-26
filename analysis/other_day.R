@@ -6,7 +6,7 @@ coef_store<-c(); data_store<-c()
 
 for(i in 1:length(u)){
   w<-which(dd$liDayGap == u[i])
-  if(length(w)>10){ # need > 5? for fit to be ok
+  if(length(w)>10){ # need > 10? for fit to be ok
     print(i)
     h <- hist(dd[w,]$liSNPdis,breaks=seq(0,max(dd[w,"liSNPdis"]),1),plot = FALSE)
     data <- data.frame( x = h$breaks[-length(h$breaks)], y = h$counts)
@@ -45,6 +45,7 @@ data_store$mod_general <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*data_store[,"day"]
   
 ggplot(data_store,aes(x=x, y=y)) + geom_point() + geom_line(aes(x=x,y=m),col="red") + 
   facet_wrap(~day,scales="free") + geom_line(aes(x=x,y=mod_general),col="blue")
+ggsave("exponential_other_day.pdf",width = 12, height = 12)
 
 ## General model 
 gen_mod_day <- function(day,l_x){
@@ -65,3 +66,4 @@ colnames(mod_gen_plot) <- c("snp","day","count")
 
 ggplot(mod_gen_plot,aes(x=snp,y=count,colour=factor(day))) + geom_line()
 # don't change much! 
+
