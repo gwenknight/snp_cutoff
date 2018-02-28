@@ -30,8 +30,11 @@ length(which(h_cum < 0.7)) # 70% 0 SNP differences
 length(which(h_cum < 0.9)) # 90% 4 SNPS different
 length(which(h_cum < 0.95)) # 95% 12 SNPS different 
 
-ggplot(dd_w, aes(x = liSNPdis)) + geom_histogram(breaks=seq(0,175,1))
-ggplot(dd_w, aes(x = liSNPdis)) + geom_histogram(binwidth = 1) + facet_wrap(~lsPt)
+ggplot(dd_w, aes(x = liSNPdis)) + geom_histogram(breaks=seq(0,90,1)) + scale_x_continuous("SNP distance") + 
+  scale_y_continuous("# of isolates")
+ggsave("Same_day_SNP_distn.pdf")
+
+#ggplot(dd_w, aes(x = liSNPdis)) + geom_histogram(binwidth = 1) + facet_wrap(~lsPt)
 
 
 ## Do we want to take into account that most people had v few differences? 
