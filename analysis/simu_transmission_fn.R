@@ -20,7 +20,7 @@ gen_mod_day <- function(day,l_x){
 
 
 #### RUNS
-simu_runs <- function(timesv, mu, npat, nruns, same){
+simu_runs <- function(timesv, mu, npat, nruns, same, randt){
   # Store
   store_all <- c()
   store_limits <- c()
@@ -40,36 +40,48 @@ simu_runs <- function(timesv, mu, npat, nruns, same){
       mu_v <- matrix(mu,1,n)}
     
     # SAMPLE times to use
-    if(length(timesv > 1)){
+    if(length(timesv) > 1){
       when_transm <- ceiling(runif(n,0,180)) # time to second sample
       ht <- hist(times,breaks = seq(0,500,1),plot = FALSE)
     } else {
       # CONSTANT times
-      when_transm <- matrix(times_c,1,n)
-      first_sample <- matrix(times_c,1,n)}
+      when_transm <- matrix(timesv,1,n)
+      first_sample <- matrix(timesv,1,n)}
+    
+    # SAMPLE uniform for rand pair timings
+    if(randt == 1){runi = runif(n,0,1)}
     
     for(i in 1:n){
-      store[i,1:2] <- c(when_transm[i], first_sample[i]) # store time
-      
       # SOURCE
-      if(length(timesv > 1)){
+      if(length(timesv) > 1){
         first_sample_i <- rMydist(1,ht$counts[which(ht$breaks < when_transm[i])]) # sample time depends on when_transm
       } else { first_sample_i <- first_sample[i]}
       
+      ts = first_sample_i; tr = when_transm[i] # timings
+      
       if(same == 1){  
-        mut_number <- rpois(1,mu_v[i] * first_sample_i) # number of mutations likely to have occured since sample
+        mut_number <- rpois(1,mu_v[i] * ts) # number of mutations likely to have occured since sample
         dis_source_from_transm <- rexp(1,1/mut_number)
       } else {
-        dis_source <- gen_mod_day(first_sample_i,150) 
+        if(randt == 1){ 
+          if(runi[i] < 0.5){ts = first_sample_i; tr = when_transm[i]
+          } else {tr = first_sample_i; ts = when_transm[i] }
+          } else {
+        dis_source <- gen_mod_day(ts,150) 
         dis_source_from_transm <- rMydist(1,dis_source)}
+        }
       
       # RECIPIENT
-      mut_number <- rpois(1,mu_v[i] * when_transm[i]) # number of mutations likely to have occured since sample
+      mut_number <- rpois(1,mu_v[i] * tr) # number of mutations likely to have occured since sample
       dis_receiver_from_transm <- rexp(1,1/mut_number) # 1/mean (rate in this definition of exp)
       
       # DISTANCE SOURCE <- TRANS -> RECIPIENT
       mut_dist <- dis_source_from_transm + dis_receiver_from_transm
+      
+      # STORE
+      store[i,1:2] <- c(when_transm[i], first_sample_i) # store time
       store[i,3] <- mut_dist # store mut distance
+      
     }
     
     #plot(store[,1], store[,2], xlab = "Time Distance (in days)", ylab = "SNP distance")
@@ -92,12 +104,7 @@ simu_runs <- function(timesv, mu, npat, nruns, same){
   colnames(store_limits) <- c("run","l70","l90","l95","l99")
   m_store_limits <- melt(store_limits,id.vars = "run")
   
-  # underlying data
-  gg <- ggplot_build(p)
-  gg_data <- gg$data[[1]]
-  gg_data <- gg_data[,c("x","density","PANEL")]
-  gg_data <- dcast(gg_data, x ~ PANEL, value.var = "density" )
-  
   # RETURN
-  return(list(store = m_store_limits, gg_data = gg_data))
+  # limits cutoffs / distribution at these limits / example distance
+  return(list(store = m_store_limits, store_all = store_all))
 }
