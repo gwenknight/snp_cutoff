@@ -14,6 +14,7 @@ gen_mod_day <- function(day,l_x){
   x <- seq(0,l_x,1)
   aa_g <-  0.99338 #mod_a_mod[1]
   bb_g <- -0.02207 #mod_a_mod[2]
+  p_aa <- -0.9762888 # from other_day_exp.R
   out <- exp(exp(aa_g + bb_g*day) + p_aa * x)
   return(out)
 }
@@ -21,6 +22,13 @@ gen_mod_day <- function(day,l_x){
 
 #### RUNS
 simu_runs <- function(timesv, mu, npat, nruns, same, randt){
+  ### timesv = times vector
+  ### mu = mutation rate
+  ### npat = number of patients
+  ### nruns = number of runs
+  ### same = if source same as recipient (1)
+  ### randt = if random timings of sampling
+  
   # Store
   store_all <- c()
   store_limits <- c()
@@ -49,7 +57,7 @@ simu_runs <- function(timesv, mu, npat, nruns, same, randt){
       first_sample <- matrix(timesv,1,n)}
     
     # SAMPLE uniform for rand pair timings
-    if(randt == 1){runi = runif(n,0,1)}
+    if(randt == 1){runi = runif(n,0,1)} # gives which sampled first
     
     for(i in 1:n){
       # SOURCE
@@ -65,11 +73,11 @@ simu_runs <- function(timesv, mu, npat, nruns, same, randt){
       } else {
         if(randt == 1){ 
           if(runi[i] < 0.5){ts = first_sample_i; tr = when_transm[i]
-          } else {tr = first_sample_i; ts = when_transm[i] }
-          } else {
+          } else {tr = first_sample_i; ts = when_transm[i] } # which sampled first 
+        } 
         dis_source <- gen_mod_day(ts,150) 
-        dis_source_from_transm <- rMydist(1,dis_source)}
-        }
+        dis_source_from_transm <- rMydist(1,dis_source)
+      }
       
       # RECIPIENT
       mut_number <- rpois(1,mu_v[i] * tr) # number of mutations likely to have occured since sample
@@ -108,3 +116,23 @@ simu_runs <- function(timesv, mu, npat, nruns, same, randt){
   # limits cutoffs / distribution at these limits / example distance
   return(list(store = m_store_limits, store_all = store_all))
 }
+
+
+##### To get underlying data on thresholds
+snp_thresh <- function(p){
+  # p is the graph of the density across the simulations
+  gg <- ggplot_build(p) # underlying data
+  gg_data <- gg$data[[1]]
+  gg_data <- cbind("sc"=1,gg_data[,c("x","density","PANEL")])
+  gg_data <- dcast(gg_data, x ~ PANEL, value.var = "density" ) # reshape
+  # thresholds: last non-zero (subtracted 1 as first row zero)
+  thresh <- c(tail(which(gg_data[,c(2)]!=0),1),
+              tail(which(gg_data[,c(3)]!=0),1),
+              tail(which(gg_data[,c(4)]!=0),1),
+              tail(which(gg_data[,c(5)]!=0),1)) - 1
+  # mean 
+  means <- c(sum(gg_data[,1] * gg_data[,2]),sum(gg_data[,1] * gg_data[,3]), sum(gg_data[,1] * gg_data[,4]),sum(gg_data[,1] * gg_data[,5]))
+  
+  return(rbind(thresh,means))
+}
+
