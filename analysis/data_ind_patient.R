@@ -9,7 +9,6 @@ ggplot(dd, aes(x = liDayGap,y=liSNPdis)) + geom_point(alpha=0.05)
 #ggplot(dd, aes(x = liDayGap,y=liSNPdis)) + geom_point(alpha=0.05) + scale_x_continuous(limits = c(0,30)) + scale_y_continuous(limits = c(0,50))
 
 ggplot(dd, aes(x = liDayGap)) + geom_histogram(binwidth=1) 
-table(d)
 
 ###**** Same day samples ***########################################################################################################################################################################################################
 w<-which(dd$liDayGap == 0)
@@ -36,6 +35,7 @@ ggsave("Same_day_SNP_distn.pdf")
 
 #ggplot(dd_w, aes(x = liSNPdis)) + geom_histogram(binwidth = 1) + facet_wrap(~lsPt)
 
+mean(dls) # s0 for transmission prediciton interval = 4.247059
 
 ## Do we want to take into account that most people had v few differences? 
 # no. think we want to treat each pair as an independent sample. 
