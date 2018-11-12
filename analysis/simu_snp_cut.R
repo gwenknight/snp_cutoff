@@ -1,5 +1,6 @@
 ### Simulate SNP cutoff
 library(scales)
+library(ggplot2)
 setwd("~/Documents/snp_cutoff/")
 theme_set(theme_bw(base_size = 24))
 library(truncnorm)
@@ -86,7 +87,6 @@ ggplot(store, aes(x = liSNPdis)) + geom_histogram(aes(y=..density..), binwidth =
 setwd("../plots")
 ggsave("sample_time_store_output.pdf")
 ### This is the distribution of SNPS expected between two people who DID TRANSMIT
-
 
 ggplot(dd_wo, aes(x = liSNPdis)) + geom_histogram(binwidth = 1, alpha = 0.4, aes(y=..density..)) + 
   geom_histogram(data = store,aes(x=liSNPdis,y=..density..), binwidth = 1, fill = "red", alpha = 0.4) + 
