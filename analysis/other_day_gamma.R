@@ -23,14 +23,18 @@ fit.exp <- fitdistr(data$y/sum(data$y), densfun = "exponential")
 fit.poisson <- fitdistr(data$y/sum(data$y), distr = "poisson",densfun = "poisson", method = "mle")
 gofstat(list(fit.exp,fit.poisson))
 
+coef_store<-c(); data_store<-c()
 for(i in 1:length(u)){
   w<-which(dd$liDayGap == u[i])
   if(length(w)>10){ # need > 10? for fit to be ok
     print(i)
     h <- hist(dd[w,]$liSNPdis,breaks=seq(0,max(dd[w,"liSNPdis"]),1),plot = FALSE)
-    data <- data.frame( x = h$breaks[-length(h$breaks)], y = h$counts/sum(h$counts))
-    fit.gamma <- fitdist(data$y/sum(data$y), distr = "gamma", 
-                         method = "mle",start = list(shape = 1, rate = 2),lower = c(0,0))
+    #data <- data.frame( x = h$breaks[-length(h$breaks)], y = h$counts/sum(h$counts))
+    data <- data.frame( x = h$breaks[-length(h$breaks)], y = h$counts)
+    #fit.gamma <- fitdist(data$y/sum(data$y), distr = "gamma", 
+    #                     method = "mle",start = list(shape = 3, rate = 0.5),lower = c(0,0))
+    fit.gamma <- fitdist(data$y, distr = "gamma", 
+                         method = "mle",start = list(shape = 1, rate = 0.5),lower = c(0,0))
     
     plot(data$x,data$y)
     lines(data$x, dgamma(data$x, coef(fit.gamma)[1], coef(fit.gamma)[2]))
