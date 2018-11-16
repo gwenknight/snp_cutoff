@@ -36,7 +36,7 @@ npat = 1000
 nruns = 10000
 
 ###*** CONSTANT 6mo***###################################################################################################################################################
-s_constant <- simu_runs(180, mu, npat, nruns,0,0)
+s_constant <- simu_runs_orig(180, mu, npat, nruns,0,0)
 p_constant <- ggplot(s_constant$store,aes(x=value,fill = variable)) + geom_histogram(aes(y = ..density..),binwidth = 1,position = "identity") + 
   facet_wrap(~variable) + scale_x_continuous("SNP distance",limits = c(0,30)) + scale_y_continuous("Probability")
 ggsave("constant_6mo_SNP_dist_limits.pdf")
