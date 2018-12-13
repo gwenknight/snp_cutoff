@@ -136,7 +136,7 @@ dim(dataS1)
 
 # Removing outliers
 dataS1 = dataS1[-which(grepl("outlier",dataS1$Note)==TRUE),]
-dim(dataS1)
+dim(dataS1) # 1510 12
 
 # Only CC22 data
 dd = dataS1[which(dataS1$CC1 == 22),];
@@ -192,7 +192,16 @@ plot(coef_store$day,coef_store$a,ylim = c(0,4),xlab = "Time between samples",yla
 lines(coef_store$day, predict(mod_a, list(x = coef_store$day)),col="red")
 dev.off()
 
-# No longer flat line for b: time increases the distance
+# Flat line? 
+pdf("output/b_flat_st30.pdf")
+plot(coef_store[,1],coef_store[,3],xlab = "Time between samples",ylab = "Slope")
+# Assume all v similar - take mean without the v small outliers greater than -8 
+mean(coef_store[,3])
+p_aa <- mean(coef_store[,3]) 
+abline(h = p_aa,col="red",lty="dashed")
+dev.off()
+
+# No longer flat line for b: time increases the distance: BUT
 ll <- lm(coef_store[,3] ~ coef_store[,1])
 
 pdf("output/b_line_st30.pdf")
