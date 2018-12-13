@@ -382,24 +382,34 @@ ggsave(plot_file, plot = g4, device = "pdf", width = plot_width, height = plot_h
 # Load in the required functions
 # These are the distribution sampler / the curve for the number of SNPs over time / the simulation model
 source("analysis/simu_transmission_fn.R")
-
 require(reshape2)
 
 # Simulation population 
-npat = 1000 # number of patient samples
-nruns = 10000 # number of transmission samples
+npat = 10000 # number of patient samples
+nruns = 500 # number of transmission samples
 
 ndays = 180 # time between samples
 
-#### CC22 
-mu = substitution_rate_cc22/365 # mutation rate for CC22: 4.874424 / 365 per day
+# Choose which mapping 
+#map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
+#map <- "CC30"
+map <- "CC22_core"
+#map <- "CC30_core"
+
+
+#### CC22  ### NEEDS TO CHANGE FOR EACH MAP: FRANCESC HOW ARE YOU DOING IN THE ABOVE? 
+#mu = substitution_rate_cc22/365 # mutation rate for CC22: 4.874424 / 365 per day
+mu = 4.874424 / 365 #per day
+
+# Parameters from model fit
+param_general_fit <- read.csv(paste0("output/param_general_fit_",map,".csv"))[,2]
 
 # Run the simulation 
-ss <- simu_runs(ndays,mu,npat,nruns)
+ss <- simu_runs(ndays,mu,npat,nruns, param_general_fit)
 g5 = ggplot(ss$store_limits, aes(x=value, fill = variable)) + geom_histogram(aes(y=..density..), binwidth = 1, position = "identity") +   
   facet_wrap(~variable) + guides(fill=FALSE) + scale_y_continuous(paste0("Density across ", nruns, " simulations")) + scale_x_continuous("Number of SNPs")
 
-plot_file = "simulation_model_distribution_of_SNPs.pdf";
+plot_file = paste0("simulation_model_distribution_of_SNPs_",map,".pdf");
 
 ggsave(plot_file, plot = g5, device = "pdf", width = plot_width, height = plot_height, dpi = 300, units = "in")
 
@@ -407,23 +417,9 @@ ggsave(plot_file, plot = g5, device = "pdf", width = plot_width, height = plot_h
 max(ss$store_limits[which(ss$store_limits$variable == "99%"),"value"]) ## 23/24 SNPS (some random variation expected) 
 # = above this, capture 99% of all transmissions
 
-
-## FOR ST30 strain MRSA252 mapping data      
-#### CC22 - FRANCESC: WILL THIS BE THE SAME?
-mu = substitution_rate_cc22/365 # mutation rate for CC22: 4.874424 / 365 per day
-
-# Run the simulation 
-ss <- simu_runs(ndays,mu,npat,nruns, gen_mod = gen_mod_day_st30)
-g5 = ggplot(ss$store_limits, aes(x=value, fill = variable)) + geom_histogram(aes(y=..density..), binwidth = 1, position = "identity") +   
-  facet_wrap(~variable) + guides(fill=FALSE) + scale_y_continuous(paste0("Density across ", nruns, " simulations")) + scale_x_continuous("Number of SNPs")
-
-plot_file = "simulation_model_distribution_of_SNPs_st30.pdf";
-
-ggsave(plot_file, plot = g5, device = "pdf", width = plot_width, height = plot_height, dpi = 300, units = "in")
-
-# Maximum number of SNPs needed to capture 99% of the transmission events
-max(ss$store_limits[which(ss$store_limits$variable == "99%"),"value"]) ## 171 SNPS (some random variation expected) 
-# = above this, capture 99% of all transmissions
-
-
+## Results: (some random variation expected)
+## map = CC22      = 23
+## map = CC30      = 75 / 79
+## map = CC22_core = 22
+## map = CC30_core = 24
 

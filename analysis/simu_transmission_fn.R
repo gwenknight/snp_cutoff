@@ -11,34 +11,22 @@ rMydist <- function(n,x) {
 
 ## General model for how distance from transmitted changes over time
 ## parameters taken from data_fit.R 
-## THIS IS FOR ST22 strain HO 5096 0412 mapping data   
-gen_mod_day <- function(day,l_x){ 
+gen_mod_day <- function(day,l_x, param_general_fit){
   ### day = number of days from first sample
   ### l_x = maximum number of SNPs
+  ### param_general_fit = parameters from fit to data
+  
   x <- seq(0,l_x,1)
-  aa_g <-  1.016402 #mod_a_mod[1]
-  bb_g <- -0.022452 #mod_a_mod[2]
-  p_aa <- -0.976289 # mean 
+  aa_g <- param_general_fit[1]
+  bb_g <- param_general_fit[2]
+  p_aa <- param_general_fit[3]
   out <- exp(exp(aa_g + bb_g*day) + p_aa * x)
   return(out)
 }
 
-## General model 
-# THIS IS FOR ST30 strain MRSA252 mapping data         
-gen_mod_day_st30 <- function(day,l_x){
-  ### day = number of days from first sample
-  ### l_x = maximum number of SNPs
-  x <- seq(0,l_x,1)
-  aa_g <-  1.016402 #mod_a_mod[1]
-  bb_g <- -0.022452 #mod_a_mod[2]
-  p_aa <- -0.127701 #ll$coefficients[1]
-  p_bb <-  0.002448 #ll$coefficients[1]
-  out <- exp(exp(aa_g + bb_g*day) + (p_aa + p_bb*day) * x)
-  return(out)
-}
 
 #### Transmission simulation
-simu_runs <- function(timesv, mu, npat, nruns, gen_mod = gen_mod_day){
+simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, gen_mod = gen_mod_day){
   ### timesv = time when sample in days from transmission
   ### mu = mutation rate
   ### npat = number of patients
@@ -53,7 +41,7 @@ simu_runs <- function(timesv, mu, npat, nruns, gen_mod = gen_mod_day){
   for(j in 1:nruns){
     ### SOURCE PATIENT
     # Distribution of SNPs timesv days after transmission
-    dis_source <- gen_mod(timesv,150) 
+    dis_source <- gen_mod(timesv,150,param_general_fit) 
     
     # Sample from this distribution to give number of SNPs different at this time point in SOURCE patients
     dis_source_from_transm <- rMydist(npat,dis_source)
