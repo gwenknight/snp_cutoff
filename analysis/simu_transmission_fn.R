@@ -11,7 +11,7 @@ rMydist <- function(n,x) {
 
 ## General model for how distance from transmitted changes over time
 ## parameters taken from data_fit.R 
-gen_mod_day <- function(day,l_x, param_general_fit){
+gen_mod_day <- function(day, param_general_fit, l_x = 150){
   ### day = number of days from first sample
   ### l_x = maximum number of SNPs
   ### param_general_fit = parameters from fit to data
@@ -36,31 +36,35 @@ simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, gen_mod = gen_
   
   ### STORE / PREP
   store <- matrix(0,nruns,npat)
-  store_limits <- matrix(0,nruns, 5)
   
+  store_limits <- matrix(0,nruns,5)
+  
+  ### SOURCE PATIENT
+  # Distribution of SNPs timesv days after transmission
+  dis_source <- gen_mod(timesv,param_general_fit) # Fixed
+
   for(j in 1:nruns){
-    ### SOURCE PATIENT
-    # Distribution of SNPs timesv days after transmission
-    dis_source <- gen_mod(timesv,150,param_general_fit) 
-    
-    # Sample from this distribution to give number of SNPs different at this time point in SOURCE patients
+    # Sample from SOURCE distribution to give number of SNPs different at this time point in SOURCE patients
     dis_source_from_transm <- rMydist(npat,dis_source)
     
     ### RECIPIENT PATIENT (of transmitted strain, timesv previously)
     # number of mutations likely to have occured since sample
     mut_number <- rpois(npat, mu * timesv)
+    r <- 1/mut_number
     
-    # how many mutations away if assume above number of mutations is the mean of an exponential distribution (1/mean = rate in this definition of exp)
-    dis_receiver_from_transm <- c()
-    for(i in 1:npat){
-    dis_receiver_from_transm <- c(dis_receiver_from_transm,rexp(1,1/mut_number[i]))}
-
+    # RECIPIENT: how many mutations away if assume above number of mutations is 
+    # the mean of an exponential distribution (1/mean = rate in this definition of exp)
+    # dis_receiver_from_transm <- c()
+    # for(i in 1:npat){
+    # dis_receiver_from_transm <- c(dis_receiver_from_transm,rexp(1,1/mut_number[i]))}
+     
+    dis_receiver_from_transm <- rexp(n=1*length(r), rate=r) 
     
     # DISTANCE SOURCE <- TRANS -> RECIPIENT
     mut_dist <- dis_source_from_transm + dis_receiver_from_transm
     
     # STORE
-    store[j,] <- mut_dist # store mutation distance
+    store[j,] <- c(mut_dist) # store mutation distance
     
     # Calculate cut offs
     h<-hist(mut_dist,breaks = seq(0,300,1),plot=FALSE) 

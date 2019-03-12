@@ -385,21 +385,22 @@ source("analysis/simu_transmission_fn.R")
 require(reshape2)
 
 # Simulation population 
-npat = 10000 # number of patient samples
-nruns = 500 # number of transmission samples
+npat = 459 # number of patient samples in cohort 1
+nruns = 100000 # number of transmission samples - can be increased to reduce variation in number of SNPs
 
 ndays = 180 # time between samples
 
-# Choose which mapping 
-#map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
+# Choose which mapping: All of CC22/CC30 or core genome only
+map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
 #map <- "CC30"
-map <- "CC22_core"
+#map <- "CC22_core"
 #map <- "CC30_core"
 
-
-#### CC22  ### NEEDS TO CHANGE FOR EACH MAP: FRANCESC HOW ARE YOU DOING IN THE ABOVE? 
-#mu = substitution_rate_cc22/365 # mutation rate for CC22: 4.874424 / 365 per day
-mu = 4.874424 / 365 #per day
+#mu = substitution_rate
+if(map == "CC22"){mu = 4 / 365}
+if(map == "CC30"){mu = 5 / 365}
+if(map == "CC22_core"){mu = 3 / 365}
+if(map == "CC30_core"){mu = 3 / 365}
 
 # Parameters from model fit
 param_general_fit <- read.csv(paste0("output/param_general_fit_",map,".csv"))[,2]
@@ -413,13 +414,13 @@ plot_file = paste0("simulation_model_distribution_of_SNPs_",map,".pdf");
 
 ggsave(plot_file, plot = g5, device = "pdf", width = plot_width, height = plot_height, dpi = 300, units = "in")
 
-# Maximum number of SNPs needed to capture 99% of the transmission events
-max(ss$store_limits[which(ss$store_limits$variable == "99%"),"value"]) ## 23/24 SNPS (some random variation expected) 
-# = above this, capture 99% of all transmissions
+# Maximum number of SNPs needed to capture 95% or 99% of the transmission events
+max(ss$store_limits[which(ss$store_limits$variable == "95%"),"value"]) # = below this, capture 95% of all transmissions
 
-## Results: (some random variation expected)
-## map = CC22      = 23
-## map = CC30      = 75 / 79
-## map = CC22_core = 22
-## map = CC30_core = 24
+## Results: (some random variation expected, dependening on the number of runs used)
+##            95% of transmission events
+## map = CC22      = 12
+## map = CC30      = 50
+## map = CC22_core = 9
+## map = CC30_core = 9
 

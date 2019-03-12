@@ -22,7 +22,7 @@ require(svglite)
 #map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
 #map <- "CC30"
 #map <- "CC22_core"
-#map <- "CC30_core"
+map <- "CC30_core"
 
 ##########################################################################################################
 
@@ -35,16 +35,14 @@ if(map == "CC30_core"){sheet_num = 4}
 dataS1 = read.xls(dataS1_file, sheet = sheet_num, header = T) 
 
 dim(dataS1)
+# [1] 1557   14
 
 # Removing outliers
 dataS1 = dataS1[-which(grepl("outlier",dataS1$Note)==TRUE),]
 dim(dataS1)
 
 # Only CC22 data
-#dd = dataS1[which(dataS1$CC1 == 22),];
-
-# All data
-dd = dataS1;
+dd = dataS1[which(dataS1$CC1 == 22),];
 
 ##########################################################################################################
 ###                                         1a. MODEL FIT                                              ####
@@ -101,17 +99,44 @@ dev.off()
 
 ## What is the trend for b? 
 plot(coef_store[,1],coef_store[,3],xlab = "Time between samples",ylab = "Slope")
+mod_b <- nls(b ~ -exp(gg + hh*day), data = coef_store[w,], start = list(gg = 2, hh = -0.2),
+           control = list(maxiter = 500))
+lines(coef_store[w,"day"], predict(mod_b, list(x = coef_store$day)),col="red")
+mod_b_mod <- coef(mod_b)
+
 ## Assume no change by day in b
-pdf(paste0("output/b_flat_",map,".pdf"))
-plot(coef_store[,1],coef_store[,3],xlab = "Time between samples",ylab = "Slope")
-# Assume all v similar - take mean without the v small outliers greater than -8
-mean(coef_store[,3])
-p_aa <- mean(coef_store[which(coef_store[,3] > (-4)),3]) # remove outliers
-abline(h = p_aa,col="red",lty="dashed")
+# pdf(paste0("output/b_flat_",map,".pdf"))
+# plot(coef_store[,1],coef_store[,3],xlab = "Time between samples",ylab = "Slope")
+# # Assume all v similar - take mean without the v small outliers greater than -8 
+# mean(coef_store[,3])
+# p_aa <- mean(coef_store[which(coef_store[,3] > (-4)),3]) # remove outliers
+# abline(h = p_aa,col="red",lty="dashed")
+# dev.off()
+
+# # Assume linear in the non-outliers - can't use as at 6months b is positive
+# w<-which(coef_store[,3] > (-4))
+# lb <- lm(coef_store[w,3] ~ coef_store[w,1])
+# int_b <- coefficients(lb)[1]
+# slope_b <- coefficients(lb)[2]
+# pred_b <- int_b + slope_b*coef_store[,1]
+
+pdf(paste0("output/b_exp_",map,".pdf"))
+plot(coef_store$day,coef_store$b,xlab = "Time between samples",ylab = "Slope")
+# Assume all v similar - take mean without the v small outliers greater than -8 
+lines(coef_store$day, predict(mod_b, list(x=coef_store$day)), col="red")
 dev.off()
 
+## Compare different model fits for b
+w<-which(coef_store[,3] > (-4))
+diff_nlsf_b <- sum(c(predict(mod_b, list(x = coef_store[w,"day"])) - coef_store[w,3])^2)
+diff_mean_b <- sum(c(p_aa - coef_store[w,3])^2)
+
+diff_nlsf_b
+diff_mean_b
+
 ## General model for the fit
-data_store$mod_general <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*data_store[,"day"]) + p_aa*data_store[,"x"])
+data_store$mod_general <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*data_store[,"day"]) 
+                              - exp(mod_b_mod[1] + mod_b_mod[2]*data_store[,"day"])*data_store[,"x"])
   
 # plot the general model for the fit (blue) against individual (red)
 ggplot(data_store,aes(x=x, y=y)) + geom_point() + geom_line(aes(x=x,y=m),col="red") + 
@@ -122,10 +147,47 @@ ggsave(paste0("output/fit_exponential_gen&ind_per_day_",map,".pdf"),width = 12, 
 # Parameters - output
 mod_a_mod[1]
 mod_a_mod[2]
-p_aa
+mod_b_mod[1]
+mod_b_mod[2]
 
-param_general_fit = c(mod_a_mod[1],mod_a_mod[2],p_aa)
+param_general_fit = c(mod_a_mod[1],mod_a_mod[2],mod_b_mod[1],mod_b_mod[2])
 
 write.csv(param_general_fit,paste0("output/param_general_fit_",map,".csv"))
+
+##########################################################################################################
+###                                         1b. MODEL TO GENERATE FIT                                 ####
+##########################################################################################################
+# Also in simu_transmission_fn.R
+
+## General model 
+gen_mod_day <- function(day,l_x, param_general_fit){
+  ### day = number of days from first sample
+  ### l_x = maximum number of SNPs
+  ### param_general_fit = parameters from fit to data
+  
+  x <- seq(0,l_x,1)
+  aa_g <- param_general_fit[1]
+  bb_g <- param_general_fit[2]
+  aa_h <- param_general_fit[3]
+  bb_h <- param_general_fit[4]
+  out <- exp(exp(aa_g + bb_g*day) - exp(aa_h + bb_h*day) * x)
+  return(out)
+}
+
+### Prediction for 6months = 180 days
+day = 180
+x = seq(0,10,1)
+
+gen_pred_180 <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*day) 
+                    - exp(mod_b_mod[1] + mod_b_mod[2]*day)*x)
+plot(x, gen_pred_180, ylim=c(0,5), col="red", type = "l", ylab = "Count", xlab = "SNP distance")
+lines(x, exp(exp(mod_a_mod[1] + mod_a_mod[2]*day) + p_aa*x), col = "blue")
+
+ggplot(data_store,aes(x=x, y=y, group = day)) + geom_point(aes(col = day)) + 
+  geom_line(aes(x=x,y=mod_general, group = day, col = day)) + 
+  scale_x_continuous("SNP distance") + scale_y_continuous("Count")
+
+## fit to all data
+mod_a <- nls(y ~ exp(p + q * x), data = data_store, start = list(aa = 1.4, bb = -0.2))
              
 

@@ -15,18 +15,18 @@ for(kk in 2:4){
   # Parameters from model fit
   param_general_fit <- read.csv(paste0("~/Documents/snp_cutoff/output/param_general_fit_",map,".csv"))[,2]
   
-  
   # Simulation population 
-  vnpats = c(100,500,1000,5000,10000)
-  vnruns = c(100,500,1000,5000,10000)
+  #vnpats = c(100,500,1000,5000,10000)
+  vnruns = c(100000,100000,100000,100000,100000,
+             200000,200000,200000,200000,200000)
   
   store99 <- c()
   store95 <- c()
   
-  for(i in 1:length(vnpats)){
+  #for(i in 1:length(vnpats)){
     for(j in 1:length(vnruns)){
       print(c(i,j))
-      npat = vnpats[i]
+      npat = 500 #vnpats[i]
       nruns = vnruns[j]
       
       ndays = 180 # time between samples
@@ -40,10 +40,10 @@ for(kk in 2:4){
       store99 <- c(store99, max(ss$store_limits[which(ss$store_limits$variable == "99%"),"value"]))
       store95 <- c(store95, max(ss$store_limits[which(ss$store_limits$variable == "95%"),"value"]))
     }
-  }
+  
   
   store <- cbind(store99,store95)
-  write.csv(store, paste0("~/Documents/snp_cutoff/output/store_run_check_",map,".csv"))
+  write.csv(store, paste0("~/Documents/snp_cutoff/output/store_run_check_pat500_",map,".csv"))
   
   vnpatss <- rep(vnpats, 5)
   vnrunss <- rep(vnruns, each = 5)

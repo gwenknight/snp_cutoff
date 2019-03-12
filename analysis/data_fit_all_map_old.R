@@ -22,7 +22,7 @@ require(svglite)
 #map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
 #map <- "CC30"
 #map <- "CC22_core"
-#map <- "CC30_core"
+map <- "CC30_core"
 
 ##########################################################################################################
 
@@ -35,16 +35,14 @@ if(map == "CC30_core"){sheet_num = 4}
 dataS1 = read.xls(dataS1_file, sheet = sheet_num, header = T) 
 
 dim(dataS1)
+# [1] 1557   14
 
 # Removing outliers
 dataS1 = dataS1[-which(grepl("outlier",dataS1$Note)==TRUE),]
 dim(dataS1)
 
 # Only CC22 data
-#dd = dataS1[which(dataS1$CC1 == 22),];
-
-# All data
-dd = dataS1;
+dd = dataS1[which(dataS1$CC1 == 22),];
 
 ##########################################################################################################
 ###                                         1a. MODEL FIT                                              ####
@@ -101,17 +99,21 @@ dev.off()
 
 ## What is the trend for b? 
 plot(coef_store[,1],coef_store[,3],xlab = "Time between samples",ylab = "Slope")
-## Assume no change by day in b
+# Assume linear in the non-outliers
+w<-which(coef_store[,3] > (-4))
+lb <- lm(coef_store[w,3] ~ coef_store[w,1])
+pred_b <- coefficients(lb)[1] + coefficients(lb)[2]*coef_store[,1]
+
 pdf(paste0("output/b_flat_",map,".pdf"))
 plot(coef_store[,1],coef_store[,3],xlab = "Time between samples",ylab = "Slope")
-# Assume all v similar - take mean without the v small outliers greater than -8
+# Assume all v similar - take mean without the v small outliers greater than -8 
 mean(coef_store[,3])
 p_aa <- mean(coef_store[which(coef_store[,3] > (-4)),3]) # remove outliers
 abline(h = p_aa,col="red",lty="dashed")
 dev.off()
 
 ## General model for the fit
-data_store$mod_general <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*data_store[,"day"]) + p_aa*data_store[,"x"])
+data_store$mod_general <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*data_store[,"day"]) + p_aa * data_store[,"x"])
   
 # plot the general model for the fit (blue) against individual (red)
 ggplot(data_store,aes(x=x, y=y)) + geom_point() + geom_line(aes(x=x,y=m),col="red") + 
@@ -122,10 +124,40 @@ ggsave(paste0("output/fit_exponential_gen&ind_per_day_",map,".pdf"),width = 12, 
 # Parameters - output
 mod_a_mod[1]
 mod_a_mod[2]
-p_aa
+p_aa 
 
 param_general_fit = c(mod_a_mod[1],mod_a_mod[2],p_aa)
 
 write.csv(param_general_fit,paste0("output/param_general_fit_",map,".csv"))
-             
+
+##########################################################################################################
+###                                         1b. MODEL TO GENERATE FIT                                 ####
+##########################################################################################################
+# Also in simu_transmission_fn.R
+
+## General model 
+gen_mod_day <- function(day,l_x, param_general_fit){
+  ### day = number of days from first sample
+  ### l_x = maximum number of SNPs
+  ### param_general_fit = parameters from fit to data
+  
+  x <- seq(0,l_x,1)
+  aa_g <- param_general_fit[1]
+  bb_g <- param_general_fit[2]
+  p_aa <- param_general_fit[3]
+  out <- exp(exp(aa_g + bb_g*day) + p_aa * x)
+  return(out)
+}
+
+### Prediction for 6months = 180 days
+day = 180
+x = seq(0,10,1)
+
+gen_pred_180 <- exp(exp(mod_a_mod[1] + mod_a_mod[2]*180) + p_aa * x)
+plot(x, gen_pred_180)
+
+ggplot(data_store,aes(x=x, y=y, group = day)) + geom_point(aes(col = day)) + 
+  geom_line(aes(x=x,y=mod_general, group = day, col = day)) + 
+  scale_x_continuous("SNP distance") + scale_y_continuous("Count")
+
 
