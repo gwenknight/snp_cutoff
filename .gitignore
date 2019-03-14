@@ -7,5 +7,6 @@ data/
 plots/
 output/
 Output/
+nruns/
 snp_cutoff.Rproj
 .DS_Store
