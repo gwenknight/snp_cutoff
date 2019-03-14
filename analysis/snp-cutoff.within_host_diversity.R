@@ -156,7 +156,7 @@ dataS1sd = dataS1sd_max[order(as.numeric(dataS1sd_max$SNPs)),];
 plot_title = "Empirical Cloud of Diversity"
 
 g1 = plot_cloud_of_diversity(dataS1sd,text_x_offset,plot_title)
-  
+
 plot_file = "empirical_clould_of_diversity.allCCs.pdf";
 
 ggsave(plot_file, plot = g1, device = "pdf", width = plot_width, height = plot_height, dpi = 300, units = "in")
@@ -242,7 +242,7 @@ plot_title = "Number of SNPs over time"
 boxplot = ggplot(dataS1,aes(x = bin, y = SNPs)) + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black",
-        size = size_axis_lines), axis.ticks = element_line(size = size_axis_lines)) +
+                                                                     size = size_axis_lines), axis.ticks = element_line(size = size_axis_lines)) +
   geom_boxplot(varwidth = TRUE, notch=FALSE, outlier.size = 0.5) + 
   scale_y_continuous(limits=c(0,25)) +
   scale_x_discrete(labels=xlab) + 
@@ -315,7 +315,7 @@ substitution_rate_all = timegap_coefficient_all*365
 substitution_rate_all
 # [1] 4.091438
 
-  
+
 
 ##########################################################################################################
 ###                                 8. MODELED DISTRIBUTION OF CLOUD OF DIVERSITY                     ####
@@ -384,43 +384,68 @@ ggsave(plot_file, plot = g4, device = "pdf", width = plot_width, height = plot_h
 source("analysis/simu_transmission_fn.R")
 require(reshape2)
 
-# Simulation population 
+## Simulation population 
 npat = 459 # number of patient samples in cohort 1
-nruns = 100000 # number of transmission samples - can be increased to reduce variation in number of SNPs
+nruns = 200000 # number of transmission samples - can be increased to reduce variation in number of SNPs
 
 ndays = 180 # time between samples
 
-# Choose which mapping: All of CC22/CC30 or core genome only
-map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
+## Choose which mapping: All of CC22/CC30 or core genome only
+#map <- "CC22" # ST22 strain HO 5096 0412 mapping data 
 #map <- "CC30"
 #map <- "CC22_core"
-#map <- "CC30_core"
+map <- "CC30_core"
 
-#mu = substitution_rate
+## mu = substitution_rate
 if(map == "CC22"){mu = 4 / 365}
 if(map == "CC30"){mu = 5 / 365}
 if(map == "CC22_core"){mu = 3 / 365}
 if(map == "CC30_core"){mu = 3 / 365}
 
-# Parameters from model fit
+## Parameters from model fit
 param_general_fit <- read.csv(paste0("output/param_general_fit_",map,".csv"))[,2]
 
-# Run the simulation 
-ss <- simu_runs(ndays,mu,npat,nruns, param_general_fit)
-g5 = ggplot(ss$store_limits, aes(x=value, fill = variable)) + geom_histogram(aes(y=..density..), binwidth = 1, position = "identity") +   
-  facet_wrap(~variable) + guides(fill=FALSE) + scale_y_continuous(paste0("Density across ", nruns, " simulations")) + scale_x_continuous("Number of SNPs")
+## Data for time zero transferred variability
+## Which sheet? 
+if(map == "CC22"){sheet_num = 1}
+if(map == "CC30"){sheet_num = 2}
+if(map == "CC22_core"){sheet_num = 3}
+if(map == "CC30_core"){sheet_num = 4}
+dataS1 = read.xls(dataS1_file, sheet = sheet_num, header = T) 
+# Removing outliers
+dataS1 = dataS1[-which(grepl("outlier",dataS1$Note)==TRUE),]
+# Same day 
+dd0 = dataS1[which(dd$TimeGap == 0),] # 104 pairs
+h <- hist(dd0$SNPs)
+t0prob_dist <- h$counts/sum(h$counts)
 
-plot_file = paste0("simulation_model_distribution_of_SNPs_",map,".pdf");
+## Run the simulation 10 times to give a range on the maximum, some random variation expected, dependening on the number of runs used. 
+m <- rep(0,10)
+for(i in 1:10){
+  ss <- simu_runs(ndays,mu,npat,nruns, param_general_fit, t0prob_dist)
+  
+  ## Maximum number of SNPs needed to capture 95% or 99% of the transmission events
+  m[i] <- max(ss$store_limits[which(ss$store_limits$variable == "95%"),"value"]) # = below this, capture 95% of all transmissions
+  
+}
 
-ggsave(plot_file, plot = g5, device = "pdf", width = plot_width, height = plot_height, dpi = 300, units = "in")
 
-# Maximum number of SNPs needed to capture 95% or 99% of the transmission events
-max(ss$store_limits[which(ss$store_limits$variable == "95%"),"value"]) # = below this, capture 95% of all transmissions
+## Plot the output from the last run
+# g5 = ggplot(ss$store_limits, aes(x=value, fill = variable)) + geom_histogram(aes(y=..density..), binwidth = 1, position = "identity") +   
+#   facet_wrap(~variable) + guides(fill=FALSE) + scale_y_continuous(paste0("Density across ", nruns, " simulations")) + scale_x_continuous("Number of SNPs")
+# 
+# plot_file = paste0("simulation_model_distribution_of_SNPs_",map,".pdf");
+# 
+# ggsave(plot_file, plot = g5, device = "pdf", width = plot_width, height = plot_height, dpi = 300, units = "in")
 
-## Results: (some random variation expected, dependening on the number of runs used)
-##            95% of transmission events
-## map = CC22      = 12
-## map = CC30      = 50
-## map = CC22_core = 9
-## map = CC30_core = 9
+
+## Results: 
+max(m)
+range(m)
+
+##            95% of transmission events (max [range])
+## map = CC22      = 15 (14 - 15)
+## map = CC30      = 51 (48 - 51)
+## map = CC22_core = 13 (12 - 13)
+## map = CC30_core = 13 (12 - 13)
 

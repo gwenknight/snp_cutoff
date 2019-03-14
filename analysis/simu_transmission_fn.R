@@ -26,13 +26,14 @@ gen_mod_day <- function(day, param_general_fit, l_x = 150){
 
 
 #### Transmission simulation
-simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, gen_mod = gen_mod_day){
+simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, t0dist, gen_mod = gen_mod_day){
   ### timesv = time when sample in days from transmission
   ### mu = mutation rate
   ### npat = number of patients
   ### nruns = number of runs
-  ### same = if source same as recipient (1)
-  ### randt = if random timings of sampling
+  ### param_general_fit = parameters of generalised function 
+  ### t0dist = distribution within source patient at time zero
+  ### gen_mod = function type for generalised function
   
   ### STORE / PREP
   store <- matrix(0,nruns,npat)
@@ -58,7 +59,7 @@ simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, gen_mod = gen_
     # for(i in 1:npat){
     # dis_receiver_from_transm <- c(dis_receiver_from_transm,rexp(1,1/mut_number[i]))}
      
-    dis_receiver_from_transm <- rexp(n=1*length(r), rate=r) 
+    dis_receiver_from_transm <- rexp(n=1*length(r), rate=r) + rMydist(npat,t0dist)
     
     # DISTANCE SOURCE <- TRANS -> RECIPIENT
     mut_dist <- dis_source_from_transm + dis_receiver_from_transm
