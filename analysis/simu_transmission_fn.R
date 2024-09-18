@@ -26,13 +26,14 @@ gen_mod_day <- function(day, param_general_fit, l_x = 150){
 
 
 #### Transmission simulation
-simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, t0dist, gen_mod = gen_mod_day){
+simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, t0dist, max_t0 = 0, gen_mod = gen_mod_day){
   ### timesv = time when sample in days from transmission
   ### mu = mutation rate
   ### npat = number of patients
   ### nruns = number of runs
   ### param_general_fit = parameters of generalised function 
   ### t0dist = distribution within source patient at time zero
+  ### max_t0 = indicator as to whether to sample from t0dist or to take the maximum number of SNPs. 0 = baseline = sample. If change to 1 then use maximum number
   ### gen_mod = function type for generalised function
   
   ### STORE / PREP
@@ -43,10 +44,10 @@ simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, t0dist, gen_mo
   ### SOURCE PATIENT
   # Distribution of SNPs timesv days after transmission
   dis_source <- gen_mod(timesv,param_general_fit) # Fixed
-
+  
   for(j in 1:nruns){
-    # Sample from SOURCE distribution to give number of SNPs different at this time point in SOURCE patients
-    dis_source_from_transm <- rMydist(npat,dis_source)
+    # Sample from SOURCE distribution to give number of SNPs different at this time point in SOURCE patients. STARTS at ZERO SNPs so need - 1
+    dis_source_from_transm <- rMydist(npat,dis_source) - 1
     
     ### RECIPIENT PATIENT (of transmitted strain, timesv previously)
     # number of mutations likely to have occured since sample
@@ -58,8 +59,12 @@ simu_runs <- function(timesv, mu, npat, nruns, param_general_fit, t0dist, gen_mo
     # dis_receiver_from_transm <- c()
     # for(i in 1:npat){
     # dis_receiver_from_transm <- c(dis_receiver_from_transm,rexp(1,1/mut_number[i]))}
-     
-    dis_receiver_from_transm <- rexp(n=1*length(r), rate=r) + rMydist(npat,t0dist)
+    
+    max_t0_value = max(which(t0dist>0)) - 1 # Take highest with > 1% of sampled (filtered before this function) and -1 as first is 0 SNPs - if taking maximum (max_t0 = 1)
+    
+    if(max_t0 == 0){
+      dis_receiver_from_transm <- rexp(n=1*length(r), rate=r) + rMydist(npat,t0dist) - 1 # sample from time zero distribution. Take 1 off as initially could be zero SNPs
+    }else{dis_receiver_from_transm <- rexp(n=1*length(r), rate=r) + rep(max_t0_value, npat)} # take maximum possible SNP distance
     
     # DISTANCE SOURCE <- TRANS -> RECIPIENT
     mut_dist <- dis_source_from_transm + dis_receiver_from_transm

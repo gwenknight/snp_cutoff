@@ -5,7 +5,7 @@ setwd("~/Documents/snp_cutoff/")
 source("analysis/simu_transmission_fn.R")
 
 # Choose which mapping 
-for(kk in 4){
+for(kk in 1:4){
   print(c("kk = ", kk))
   if(kk == 1){map <- "CC22"} # ST22 strain HO 5096 0412 mapping data 
   if(kk == 2){map <- "CC30"}
@@ -40,7 +40,7 @@ for(kk in 4){
   #vnruns = c(100000,100000,100000,100000,100000,
   #           200000,200000,200000,200000,200000)
   
-  param_general_fit <- read.csv(paste0("~/Documents/snp_cutoff/output/param_general_fit_",map,".csv"))[,2]
+  #param_general_fit <- read.csv(paste0("~/Documents/snp_cutoff/output/param_general_fit_",map,".csv"))[,2]
   #param_general_fit <- read.csv(paste0("~/Dropbox/MRC SD Fellowship/Research/SNP cutoffs/output/param_general_fit_",map,".csv"))[,2]
   
   # Simulation population 
@@ -62,7 +62,7 @@ for(kk in 4){
     ndays = 180 # time between samples
     
     # Run the simulation 
-    ss <- simu_runs(ndays,mu,npat,nruns, param_general_fit, t0prob_dist)
+    ss <- simu_runs(ndays,mu,npat,nruns, param_general_fit, t0prob_dist, max_t0 = 1)
     
     # Maximum number of SNPs needed to capture 99% of the transmission events
     #store99 <- c(store99, max(ss$store_limits[which(ss$store_limits$variable == "99%"),"value"]))
@@ -71,7 +71,7 @@ for(kk in 4){
   
   
   #store <- cbind(store99,store95)
-  write.csv(store95, paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_",map,".csv"))
+  write.csv(store95, paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_maxt0_",map,".csv"))
   
   
   # vnpatss <- rep(vnpats, 5)
@@ -110,10 +110,10 @@ for(kk in 4){
 
 
 ### Analyse output
-store22 <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_CC22.csv"))[,-1]
-store30 <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_CC30.csv"))[,-1]
-store22_c <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_CC22_core.csv"))[,-1]
-store30_c <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_CC30_core.csv"))[,-1]
+store22 <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_maxt0_CC22.csv"))[,-1]
+store30 <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_maxt0_CC30.csv"))[,-1]
+store22_c <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_maxt0_CC22_core.csv"))[,-1]
+store30_c <- read.csv(paste0("~/Documents/snp_cutoff/output/store_run_check_pat459_maxt0_CC30_core.csv"))[,-1]
 
 vnruns
 
@@ -122,7 +122,7 @@ colnames(out) <- c("SNPthreshold", "Map")
 out$Nruns <- rep(vnruns,4)
 
 ggplot(out, aes(x=Nruns, y = SNPthreshold)) + geom_count() + facet_wrap(~ Map) + scale_x_continuous("Number of simulations") + scale_y_discrete("SNP threshold") 
-ggsave("output/Nruns_threshold.pdf")
+ggsave("output/Nruns_threshold_maxt0.pdf")
 
 # store22 <- read.csv(paste0("~/Dropbox/MRC SD Fellowship/Research/SNP cutoffs/output/store_run_check_CC22.csv"))[,-1]
 # store30 <- read.csv(paste0("~/Dropbox/MRC SD Fellowship/Research/SNP cutoffs/output/store_run_check_CC30.csv"))[,-1]
